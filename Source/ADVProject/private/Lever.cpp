@@ -29,5 +29,6 @@ void ALever::Tick(float DeltaTime)
 
 void ALever::NotifyActorBeginOverlap(AActor* OtherActor)
 {
-	SetActorRotation(FRotator(45, 0, 90));
+	SetActorRelativeRotation(FRotator(0, 90, 45));
+	isTriggered = true;
 }

@@ -32,7 +32,7 @@ void AStampTrap::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	distance = FVector::Distance(GetActorLocation(), end);
 	if (distance>10 ) {
-		FVector vt = dir * 0.05 * DeltaTime;
+		FVector vt = dir * 0.02 * DeltaTime;
 		FVector P = GetActorLocation() + vt;
 		SetActorLocation(P);
 	}

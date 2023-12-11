@@ -16,6 +16,7 @@ AArrow::AArrow()
 	colliComp->SetRelativeScale3D(FVector(12.0f));
 	colliComp->SetCapsuleHalfHeight(35.0f);
 	colliComp->SetCapsuleRadius(1.0f);
+	colliComp->SetCollisionProfileName(TEXT("Arrow"));
 
 	bodyComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BodyMeshComp"));
 	ConstructorHelpers::FObjectFinder<UStaticMesh> tempMesh(TEXT("/Script/Engine.StaticMesh'/Game/Props/Arrow.Arrow'"));

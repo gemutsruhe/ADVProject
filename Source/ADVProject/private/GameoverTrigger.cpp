@@ -3,7 +3,7 @@
 
 #include "GameoverTrigger.h"
 #include <Components/BoxComponent.h>
-
+#include "StampTrap.h"
 
 // Sets default values
 AGameoverTrigger::AGameoverTrigger()

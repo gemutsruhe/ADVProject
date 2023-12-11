@@ -221,5 +221,6 @@ void AADVPlayer::OnHitEvent() {
 }
 
 void AADVPlayer::OnGameOver_Implementation() {
+	hp = 0;
 	UGameplayStatics::SetGamePaused(GetWorld(), true);
 }
