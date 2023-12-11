@@ -96,7 +96,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = Health)
 	void OnHitEvent();
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category=Stamina)
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category=Health)
 	void OnGameOver();
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Stamina)
