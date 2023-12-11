@@ -40,4 +40,6 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = Move)
 	FVector dir;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Collision)
+	bool isSolved = false;
 };
