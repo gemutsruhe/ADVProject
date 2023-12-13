@@ -26,6 +26,7 @@
 *.lib
 
 # Executables
+*.ucas
 *.exe
 *.out
 *.app

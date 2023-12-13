@@ -48,7 +48,13 @@ public:
 
 	void InputJump();
 
-	void InputRun();
+	void InputRunStart();
+
+	void InputRunEnd();
+
+	bool IsWalking();
+
+	bool isShiftPressed;
 
 	void InputEquip();
 
@@ -73,7 +79,11 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category=CrosshairUI)
 	TSubclassOf<class UUserWidget> crosshairUIFactory;
 
+	UPROPERTY(EditDefaultsOnly, Category = noticeBoardUI)
+	TSubclassOf<class UUserWidget> noticeBoardUIFactory;
+
 	class UUserWidget* _crosshairUI;
+	class UUserWidget* _noticeBoardUI;
 
 	UPROPERTY(VisibleAnywhere, Category=Arrow)
 	AArrow* spawnArrow;
@@ -94,7 +104,7 @@ public:
 	int32 initialHp = 100;
 
 	UFUNCTION(BlueprintCallable, Category = Health)
-	void OnHitEvent();
+	void OnHitEvent(int damage);
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category=Health)
 	void OnGameOver();
@@ -111,4 +121,6 @@ public:
 	FTimerHandle staminaTimer;
 
 	float staminaDrainRate;
+
+	void InputInteract();
 };

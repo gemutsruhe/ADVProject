@@ -27,7 +27,7 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = Collision)
 	class UBoxComponent* colliComp;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Collision)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Collision)
 	bool isTriggered = false;
 
 protected:

@@ -11,6 +11,7 @@
 #include <Kismet/GameplayStatics.h>
 #include <Blueprint/UserWidget.h>
 
+
 // Sets default values
 AADVPlayer::AADVPlayer()
 {
@@ -71,6 +72,7 @@ void AADVPlayer::BeginPlay()
 	magazine = initMagazine;
 	staminaDrainRate = 20.f;
 	_crosshairUI = CreateWidget(GetWorld(), crosshairUIFactory);
+	_noticeBoardUI = CreateWidget(GetWorld(), noticeBoardUIFactory);
 }
 
 // Called every frame
@@ -79,13 +81,49 @@ void AADVPlayer::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	float deltaStamina = staminaDrainRate * DeltaTime;
-	direction = FTransform(GetControlRotation()).TransformVector(direction);
-	AddMovementInput(direction);
-	direction = FVector::ZeroVector;
+	
 	if (bBowAim) {
 		IdleAim();
 	}
-	if (GetCharacterMovement()->MaxWalkSpeed == runSpeed) {
+	if (IsWalking()) {
+		if (isShiftPressed && !bExhausted && stamina>0) {
+			GetCharacterMovement()->MaxWalkSpeed = runSpeed;
+		}
+		else {
+			GetCharacterMovement()->MaxWalkSpeed = walkSpeed;
+		}
+	}
+	else {
+		GetCharacterMovement()->MaxWalkSpeed = 0;
+	}
+	if (stamina <= 0.f && !bExhausted) {
+		bExhausted = true;
+	}
+	else if (bExhausted) {
+		stamina += deltaStamina * 2.f;
+		if (stamina > initialStamina) {
+			stamina = initialStamina;
+			bExhausted = false;
+		}
+	}
+	else if (GetCharacterMovement()->MaxWalkSpeed == runSpeed) {
+		stamina -= deltaStamina;
+		if (stamina < 0) {
+			stamina = 0;
+		}
+	}
+	else if(stamina < initialStamina){
+		stamina += deltaStamina;
+		if (stamina > initialStamina) {
+			stamina = initialStamina;
+		}
+	}
+
+	direction = FTransform(GetControlRotation()).TransformVector(direction);
+	AddMovementInput(direction);
+	direction = FVector::ZeroVector;
+
+	/*if (GetCharacterMovement()->Velocity.Length() == runSpeed) {
 		stamina -= deltaStamina;	
 	}
 	else if (stamina <= 0.f && !bExhausted) {
@@ -100,7 +138,7 @@ void AADVPlayer::Tick(float DeltaTime)
 	}
 	else if (GetCharacterMovement()->MaxWalkSpeed == walkSpeed && stamina+deltaStamina<=initialStamina) {
 		stamina += deltaStamina;
-	}
+	}*/
 }
 
 // Called to bind functionality to input
@@ -113,11 +151,12 @@ void AADVPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 	PlayerInputComponent->BindAxis(TEXT("MoveVertical"), this, &AADVPlayer::MoveVertical);
 	PlayerInputComponent->BindAxis(TEXT("MoveHorizontal"), this, &AADVPlayer::MoveHorizontal);
 	PlayerInputComponent->BindAction(TEXT("Jump"), IE_Pressed, this, &AADVPlayer::InputJump);
-	PlayerInputComponent->BindAction(TEXT("Run"), IE_Pressed, this, &AADVPlayer::InputRun);
-	PlayerInputComponent->BindAction(TEXT("Run"), IE_Released, this, &AADVPlayer::InputRun);
+	PlayerInputComponent->BindAction(TEXT("Run"), IE_Pressed, this, &AADVPlayer::InputRunStart);
+	PlayerInputComponent->BindAction(TEXT("Run"), IE_Released, this, &AADVPlayer::InputRunEnd);
 	PlayerInputComponent->BindAction(TEXT("Equip"), IE_Pressed, this, &AADVPlayer::InputEquip);
 	PlayerInputComponent->BindAction(TEXT("AimandShoot"), IE_Pressed, this, &AADVPlayer::InputAim);
 	PlayerInputComponent->BindAction(TEXT("AimandShoot"), IE_Released, this, &AADVPlayer::InputShoot);
+	PlayerInputComponent->BindAction(TEXT("Interaction"), IE_Pressed, this, &AADVPlayer::InputInteract);
 }
 
 void AADVPlayer::LookVertical(float value) {
@@ -129,8 +168,15 @@ void AADVPlayer::LookHorizontal(float value) {
 void AADVPlayer::MoveVertical(float value) {
 	direction.X = value;
 }
-void AADVPlayer::MoveHorizontal(float value) {
+void AADVPlayer::MoveHorizontal(float value) { 
 	direction.Y = value;
+}
+
+bool AADVPlayer::IsWalking() {
+	if (direction.X != 0.0 || direction.Y != 0.0) {
+		return true;
+	}
+	return false;
 }
 
 void AADVPlayer::InputJump() {
@@ -140,18 +186,12 @@ void AADVPlayer::InputJump() {
 
 }
 
-void AADVPlayer::InputRun() {
-	if (bExhausted) {
-		return;
-	}
-	auto movement = GetCharacterMovement();
+void AADVPlayer::InputRunStart() {	
+	isShiftPressed = true;
+}
 
-	if (movement->MaxWalkSpeed > walkSpeed) {
-		movement->MaxWalkSpeed = walkSpeed;
-	}
-	else {
-		movement->MaxWalkSpeed = runSpeed;
-	}
+void AADVPlayer::InputRunEnd() {
+	isShiftPressed = false;
 }
 
 void AADVPlayer::InputEquip() {
@@ -185,9 +225,18 @@ void AADVPlayer::InputAim() {
 	}
 
 	bBowAim = true;
-	_crosshairUI->AddToViewport();
-	springArmComp->SetRelativeLocation(FVector(0, 70, 90));
-	tpsCamComp->SetFieldOfView(45.0f);
+	if (_crosshairUI != nullptr) {
+
+		_crosshairUI->AddToViewport();
+	}
+
+	if (springArmComp != nullptr) {
+		springArmComp->SetRelativeLocation(FVector(0, 70, 90));
+	}
+	if (tpsCamComp != nullptr) {
+		tpsCamComp->SetFieldOfView(45.0f);
+	}
+
 	shootPosition = GetMesh()->GetSocketTransform(TEXT("RightHandThumb2Socket"));
 	spawnArrow = GetWorld()->SpawnActor<AArrow>(arrowFactory);
 }
@@ -213,8 +262,8 @@ void AADVPlayer::InputShoot() {
 	tpsCamComp->SetFieldOfView(90.0f);
 }
 
-void AADVPlayer::OnHitEvent() {
-	hp = hp-10;
+void AADVPlayer::OnHitEvent(int damage) {
+	hp = hp-damage;
 	if (hp <= 0) {
 		OnGameOver();
 	}
@@ -222,5 +271,26 @@ void AADVPlayer::OnHitEvent() {
 
 void AADVPlayer::OnGameOver_Implementation() {
 	hp = 0;
-	UGameplayStatics::SetGamePaused(GetWorld(), true);
+	
+	//UGameplayStatics::SetGamePaused(GetWorld(), true);
+}
+
+void AADVPlayer::InputInteract() {
+	UE_LOG(LogTemp, Log, TEXT("Press F"));
+	FVector startPos = tpsCamComp->GetComponentLocation();
+	FVector endPos = tpsCamComp->GetComponentLocation() + tpsCamComp->GetForwardVector() *1000;
+	FHitResult hitInfo;
+	FCollisionQueryParams params;
+	params.AddIgnoredActor(this);
+	bool bHit = GetWorld()->LineTraceSingleByChannel(hitInfo, startPos, endPos, ECC_GameTraceChannel3, params);
+	if (bHit) {
+		auto hitComp = hitInfo.GetComponent();
+		if (hitComp) {
+			if (hitComp->GetName() == TEXT("Notice Board")) {
+				APlayerController* control = Cast<APlayerController>(GetController());
+				control->bShowMouseCursor = true;
+				_noticeBoardUI->AddToViewport();
+			}
+		}
+	}
 }

@@ -23,4 +23,13 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+protected:
+	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
+
+private:
+	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true"))
+	FName transferLevelName;
+
+	UPROPERTY()
+	class UBoxComponent* transferVolume;
 };
